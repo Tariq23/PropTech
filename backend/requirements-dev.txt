@@ -1,0 +1,9 @@
+# backend/requirements-dev.txt - For Development & Testing
+
+pytest
+pytest-flask
+factory-boy
+coverage
+black
+flake8
+isort

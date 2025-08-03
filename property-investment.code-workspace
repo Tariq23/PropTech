@@ -1,0 +1,27 @@
+{
+    "folders": [
+      {
+        "name": "Backend (Python/Flask)",
+        "path": "./backend"
+      },
+      {
+        "name": "Frontend (React/Vite)", 
+        "path": "./frontend"
+      }
+    ],
+    "settings": {
+      "terminal.integrated.defaultProfile.osx": "bash",
+      "terminal.integrated.defaultProfile.linux": "bash",
+      "terminal.integrated.defaultProfile.windows": "Command Prompt",
+      "python.defaultInterpreterPath": "./backend/.venv/bin/python",
+      "python.terminal.activateEnvironment": true
+    },
+    "extensions": {
+      "recommendations": [
+        "ms-python.python",
+        "bradlc.vscode-tailwindcss",
+        "esbenp.prettier-vscode",
+        "ms-vscode.vscode-typescript-next"
+      ]
+    }
+  }

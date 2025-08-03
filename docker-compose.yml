@@ -1,0 +1,79 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15
+    container_name: proptech_postgres
+    environment:
+      POSTGRES_DB: property_investment
+      POSTGRES_USER: proptech_user
+      POSTGRES_PASSWORD: proptech_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - proptech_network
+
+  # Redis for caching and sessions
+  redis:
+    image: redis:7-alpine
+    container_name: proptech_redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - proptech_network
+
+  # Backend API
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: proptech_backend
+    environment:
+      - FLASK_ENV=development
+      - DATABASE_URL=postgresql://proptech_user:proptech_password@postgres:5432/property_investment
+      - REDIS_URL=redis://redis:6379
+      - SECRET_KEY=dev-secret-key-change-in-production
+      - JWT_SECRET_KEY=dev-jwt-secret-key-change-in-production
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend:/app
+      - ./uploads:/app/uploads
+    depends_on:
+      - postgres
+      - redis
+    networks:
+      - proptech_network
+    command: python run.py
+
+  # Frontend
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: proptech_frontend
+    environment:
+      - VITE_API_URL=http://localhost:8000/api
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    depends_on:
+      - backend
+    networks:
+      - proptech_network
+    command: npm run dev
+
+volumes:
+  postgres_data:
+  redis_data:
+
+networks:
+  proptech_network:
+    driver: bridge
