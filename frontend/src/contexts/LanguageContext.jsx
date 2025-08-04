@@ -11,7 +11,6 @@ const LanguageContext = createContext();
 i18n
   .use(Backend)
   .use(LanguageDetector)
-  .use(initReactI18next)
   .init({
     fallbackLng: 'en',
     debug: process.env.NODE_ENV === 'development',
