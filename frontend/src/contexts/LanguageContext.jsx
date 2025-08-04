@@ -1,61 +1,44 @@
-// frontend/src/contexts/LanguageContext.jsx
+// src/contexts/LanguageContext.jsx
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import i18n from 'i18next';
-import { initReactI18next } from 'react-i18next';
-import Backend from 'i18next-http-backend';
-import LanguageDetector from 'i18next-browser-languagedetector';
+import { useTranslation } from 'react-i18next';
 
 const LanguageContext = createContext();
 
-// Initialize i18n
-i18n
-  .use(Backend)
-  .use(LanguageDetector)
-  .init({
-    fallbackLng: 'en',
-    debug: process.env.NODE_ENV === 'development',
-    
-    interpolation: {
-      escapeValue: false,
-    },
-    
-    backend: {
-      loadPath: '/locales/{{lng}}.json',
-    },
-    
-    detection: {
-      order: ['localStorage', 'navigator'],
-      caches: ['localStorage'],
-    },
-  });
-
 export const LanguageProvider = ({ children }) => {
-  const [currentLanguage, setCurrentLanguage] = useState('en');
-  const [isRTL, setIsRTL] = useState(false);
+  const { i18n } = useTranslation();
+  const [currentLanguage, setCurrentLanguage] = useState(
+    localStorage.getItem('language') || 'en'
+  );
+  const [isRTL, setIsRTL] = useState(currentLanguage === 'ar');
 
   useEffect(() => {
-    const savedLanguage = localStorage.getItem('language') || 'en';
-    setCurrentLanguage(savedLanguage);
-    i18n.changeLanguage(savedLanguage);
-    setIsRTL(savedLanguage === 'ar');
-  }, []);
-
-  const changeLanguage = (language) => {
-    setCurrentLanguage(language);
-    setIsRTL(language === 'ar');
-    i18n.changeLanguage(language);
-    localStorage.setItem('language', language);
+    // Update i18n language
+    i18n.changeLanguage(currentLanguage);
     
-    // Update document direction for RTL languages
-    document.documentElement.dir = language === 'ar' ? 'rtl' : 'ltr';
-    document.documentElement.lang = language;
+    // Update RTL
+    const rtl = currentLanguage === 'ar';
+    setIsRTL(rtl);
+    
+    // Update document direction
+    document.documentElement.dir = rtl ? 'rtl' : 'ltr';
+    document.documentElement.lang = currentLanguage;
+    
+    // Save to localStorage
+    localStorage.setItem('language', currentLanguage);
+  }, [currentLanguage, i18n]);
+
+  const changeLanguage = (lang) => {
+    setCurrentLanguage(lang);
   };
 
   const value = {
     currentLanguage,
-    changeLanguage,
     isRTL,
-    t: i18n.t,
+    changeLanguage,
+    languages: [
+      { code: 'en', name: 'English', nativeName: 'English' },
+      { code: 'ar', name: 'Arabic', nativeName: 'العربية' }
+    ]
   };
 
   return (
@@ -72,3 +55,5 @@ export const useLanguage = () => {
   }
   return context;
 };
+
+export default LanguageContext;

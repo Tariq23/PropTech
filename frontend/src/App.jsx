@@ -1,142 +1,152 @@
-import React, { Suspense } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+// src/App.jsx
+// Minimal working version to get your app running
+
+import React, { Suspense, createContext, useContext, useState, useEffect } from 'react';
+import { BrowserRouter, Routes, Route, Link } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from 'react-query';
-import LoadingSpinner from './components/common/LoadingSpinner';
+import i18n from 'i18next';
+import { initReactI18next, useTranslation } from 'react-i18next';
+import HttpApi from 'i18next-http-backend';
+import LanguageDetector from 'i18next-browser-languagedetector';
 
-// Import i18n setup
-import './i18n';
+// Initialize i18n
+i18n
+  .use(HttpApi)
+  .use(LanguageDetector)
+  .use(initReactI18next)
+  .init({
+    fallbackLng: 'en',
+    debug: false,
+    interpolation: {
+      escapeValue: false,
+    },
+    backend: {
+      loadPath: '/locales/{{lng}}/translation.json',
+    },
+  });
 
-// Layout components
-import PublicLayout from './components/layouts/PublicLayout';
-import PortalLayout from './components/layouts/PortalLayout';
+// Create Language Context
+const LanguageContext = createContext();
 
-// Public pages
-import HomePage from './pages/public/HomePage';
+const LanguageProvider = ({ children }) => {
+  const { i18n } = useTranslation();
+  const [currentLanguage, setCurrentLanguage] = useState(
+    localStorage.getItem('language') || 'en'
+  );
 
-// Auth pages
-import LoginPage from './pages/auth/LoginPage';
-import RegisterPage from './pages/auth/RegisterPage';
-import ForgotPasswordPage from './pages/auth/ForgotPasswordPage';
-import ResetPasswordPage from './pages/auth/ResetPasswordPage';
-import VerifyEmailPage from './pages/auth/VerifyEmailPage';
+  useEffect(() => {
+    i18n.changeLanguage(currentLanguage);
+    document.documentElement.dir = currentLanguage === 'ar' ? 'rtl' : 'ltr';
+    document.documentElement.lang = currentLanguage;
+    localStorage.setItem('language', currentLanguage);
+  }, [currentLanguage, i18n]);
 
-// Portal pages (lazy load existing pages)
-const DashboardPage = React.lazy(() => 
-  import('./pages/portal/DashboardPage').catch(() => ({
-    default: () => (
-      <div className="p-6">
-        <h1 className="text-2xl font-bold mb-4">Dashboard</h1>
-        <p>Welcome to your investor dashboard!</p>
-      </div>
-    )
-  }))
-);
+  const changeLanguage = (lang) => {
+    setCurrentLanguage(lang);
+  };
 
-const PropertiesPage = React.lazy(() => 
-  import('./pages/portal/PropertiesPage').catch(() => ({
-    default: () => (
-      <div className="p-6">
-        <h1 className="text-2xl font-bold mb-4">Properties</h1>
-        <p>Property listings will appear here.</p>
-      </div>
-    )
-  }))
-);
-
-const ProfilePage = React.lazy(() => 
-  import('./pages/portal/ProfilePage').catch(() => ({
-    default: () => (
-      <div className="p-6">
-        <h1 className="text-2xl font-bold mb-4">Profile</h1>
-        <p>Your profile settings will appear here.</p>
-      </div>
-    )
-  }))
-);
-
-const DocumentsPage = React.lazy(() => 
-  import('./pages/portal/DocumentsPage').catch(() => ({
-    default: () => (
-      <div className="p-6">
-        <h1 className="text-2xl font-bold mb-4">Documents</h1>
-        <p>Your documents will appear here.</p>
-      </div>
-    )
-  }))
-);
-
-// Test page
-const TestPage = React.lazy(() => 
-  import('./pages/TestPage').catch(() => ({
-    default: () => (
-      <div className="min-h-screen bg-gray-100 flex items-center justify-center">
-        <div className="bg-white p-8 rounded-lg shadow-lg">
-          <h1 className="text-2xl font-bold mb-4">Test Page</h1>
-          <p>If you can see this, your frontend is working!</p>
-          <p className="mt-4 text-sm text-gray-600">Backend URL: {import.meta.env.VITE_API_URL || 'http://127.0.0.1:5000'}</p>
-        </div>
-      </div>
-    )
-  }))
-);
-
-// Simple PrivateRoute component
-const PrivateRoute = ({ children }) => {
-  // For now, just render children - later we'll add proper auth check
-  return children;
+  return (
+    <LanguageContext.Provider value={{ currentLanguage, changeLanguage }}>
+      {children}
+    </LanguageContext.Provider>
+  );
 };
 
+// Hook to use language context
+const useLanguage = () => {
+  const context = useContext(LanguageContext);
+  if (!context) {
+    throw new Error('useLanguage must be used within a LanguageProvider');
+  }
+  return context;
+};
+
+// Simple Home Component
+const Home = () => {
+  const { t } = useTranslation();
+  const { currentLanguage, changeLanguage } = useLanguage();
+
+  return (
+    <div style={{ padding: '20px' }}>
+      <h1>{t('common.welcome', 'Welcome to PropTech Platform')}</h1>
+      <p>Current Language: {currentLanguage}</p>
+      <div style={{ marginTop: '10px' }}>
+        <button 
+          onClick={() => changeLanguage('en')}
+          style={{ marginRight: '10px', padding: '10px 20px' }}
+        >
+          English
+        </button>
+        <button 
+          onClick={() => changeLanguage('ar')}
+          style={{ padding: '10px 20px' }}
+        >
+          العربية
+        </button>
+      </div>
+      <nav style={{ marginTop: '20px' }}>
+        <Link to="/dashboard" style={{ marginRight: '10px' }}>
+          {t('navigation.dashboard', 'Dashboard')}
+        </Link>
+        <Link to="/properties">
+          {t('navigation.properties', 'Properties')}
+        </Link>
+      </nav>
+    </div>
+  );
+};
+
+// Simple Dashboard Component
+const Dashboard = () => {
+  const { t } = useTranslation();
+  
+  return (
+    <div style={{ padding: '20px' }}>
+      <h1>{t('dashboard.title', 'Dashboard')}</h1>
+      <p>{t('dashboard.overview', 'Overview')}</p>
+      <Link to="/">Back to Home</Link>
+    </div>
+  );
+};
+
+// Simple Properties Component
+const Properties = () => {
+  const { t } = useTranslation();
+  
+  return (
+    <div style={{ padding: '20px' }}>
+      <h1>{t('properties.title', 'Properties')}</h1>
+      <p>{t('properties.noResults', 'No properties found')}</p>
+      <Link to="/">Back to Home</Link>
+    </div>
+  );
+};
+
+// Create QueryClient
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      staleTime: 5 * 60 * 1000, // 5 minutes
-      cacheTime: 10 * 60 * 1000, // 10 minutes
+      refetchOnWindowFocus: false,
+      retry: 1,
     },
   },
 });
 
+// Main App Component
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <Router>
-        <Suspense fallback={<LoadingSpinner />}>
-          <Routes>
-            {/* Test route - accessible without authentication */}
-            <Route path="/test" element={<TestPage />} />
-
-            {/* Public routes */}
-            <Route path="/" element={<PublicLayout />}>
-              <Route index element={<HomePage />} />
-            </Route>
-
-            {/* Auth routes (standalone) */}
-            <Route path="/auth/login" element={<LoginPage />} />
-            <Route path="/auth/register" element={<RegisterPage />} />
-            <Route path="/auth/forgot-password" element={<ForgotPasswordPage />} />
-            <Route path="/auth/reset-password/:token" element={<ResetPasswordPage />} />
-            <Route path="/auth/verify-email/:token" element={<VerifyEmailPage />} />
-
-            {/* Portal routes */}
-            <Route
-              path="/portal"
-              element={
-                <PrivateRoute>
-                  <PortalLayout />
-                </PrivateRoute>
-              }
-            >
-              <Route index element={<Navigate to="/portal/dashboard" replace />} />
-              <Route path="dashboard" element={<DashboardPage />} />
-              <Route path="properties" element={<PropertiesPage />} />
-              <Route path="profile" element={<ProfilePage />} />
-              <Route path="documents" element={<DocumentsPage />} />
-            </Route>
-
-            {/* Catch all other routes and redirect to home */}
-            <Route path="*" element={<Navigate to="/" replace />} />
-          </Routes>
-        </Suspense>
-      </Router>
+      <Suspense fallback={<div>Loading translations...</div>}>
+        <LanguageProvider>
+          <BrowserRouter>
+            <Routes>
+              <Route path="/" element={<Home />} />
+              <Route path="/dashboard" element={<Dashboard />} />
+              <Route path="/properties" element={<Properties />} />
+            </Routes>
+          </BrowserRouter>
+        </LanguageProvider>
+      </Suspense>
     </QueryClientProvider>
   );
 }
